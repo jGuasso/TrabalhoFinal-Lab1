@@ -1,12 +1,28 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
 #include <time.h>
 
 #define INT_MAX 2147483647
 #define TAM_MAX_LINHA 256
 #define TAM_MAX_PALAVRA 50
+
+int fim_de_frase(char caracter);
+void limparpalavra(char palavra[]);
+int retira(char linha[],char termo[]);
+void substituir_palavra(char linha[],char novo[],int pos,int tam_antigo);
+int tamanho_letras(char palavra[]);
+int numero_extenso(char linha[],int pos, int num);
+void espacosrepetidos(char linha[]);
+int perguntar(char linha[],char copialinha[],char regra[]);
+int sinalaberto_e_nao_fechados(char linha[], int pos,int primeiro);
+int mesmo_sinal(char linha[], int pos,int primeiro);
+int ehcaracter_especial(char c);
+int ehmaiuscula(char c);
+int ehdigito(char c);
+int verifica_dicio(FILE *dicio, char palavra[]);
+int nivel_semelhanca(char palavradicio[], char palavra[]);
+int semelhanca(FILE *dicio, char palavra[]);
 
 //Função que verifica se o caracter encerra a frase
 int fim_de_frase(char caracter){
@@ -51,7 +67,7 @@ void substituir_palavra(char linha[],char novo[],int pos,int tam_antigo){
 int tamanho_letras(char palavra[]){
     int tam, cont_maiusculas=0, cont_minusculas=0,caixa_alta;
     int retorno = 0;
-    tam =strlen(palavra);
+    tam=strlen(palavra);
     int i;
     for ( i = 0; i < tam; i++)
     {
@@ -87,80 +103,93 @@ int tamanho_letras(char palavra[]){
 //Função que substitui números de 0 a 10 por sua escrita por extenso
 int numero_extenso(char linha[],int pos, int num){
     char str[10];
+    int tam;
     if(num<11){
         switch (num)
         {
         case 0:
             sprintf(str,"zero");
+            tam=1;
             break;
         case 1:
             sprintf(str,"um");
+            tam=1;
             break;
         case 2:
             sprintf(str,"dois");
+            tam=1;
             break;
         case 3:
             sprintf(str,"tres");
+            tam=1;
             break; 
         case 4:
             sprintf(str,"quatro");
+            tam=1;
             break; 
         case 5:
             sprintf(str,"cinco");
+            tam=1;
             break;
         case 6:
             sprintf(str,"seis");
+            tam=1;
             break;
         case 7:
             sprintf(str,"sete");
+            tam=1;
             break;
         case 8:
             sprintf(str,"oito");
+            tam=1;
             break;
         case 9:
             sprintf(str,"nove");
+            tam=1;
             break;
         case 10:
             sprintf(str,"dez");
+            tam=2;
             break;
         }
-        substituir_palavra(linha,str,pos,1);
+        substituir_palavra(linha,str,pos,tam);
         return 1;
     }
     else return 0;
 
 }
 
-//Função que remove os caracteres especiais
-int caracteres_especiais(char linha[]){
-    int retorno = 0;
-    char especiais[6][3]={
-        "@","\x25","#","&","*","$"};
+int ehcaracter_especial(char c){
+    char especiais[6]={
+        '@','\x25','#','&','*','$'};
     for (int i = 0; i < 6; i++)
     {
-        retorno+=retira(linha,especiais[i]);
+        if (c==especiais[i])
+        {
+            return 1;
+        }
     }
-    return (retorno>0);
+    return 0;
 }
 
 //Função que remove espaços repetidos
-int espacosrepetidos(char linha[]){
-    int tam = strlen(linha);
-    char *pos;
+void espacosrepetidos(char linha[]){
+    int tam = strlen(linha),espacos;
     char copialinha[TAM_MAX_LINHA];
     strcpy(copialinha,linha);
     for (int i = 0; i < tam; i++)
     {
-        if(linha[i]==' '&&linha[i+1]==' ')
+        espacos=0;
+        for (int j = i;linha[j]==' '; j++)espacos++; 
+        
+        if(espacos>1)
         {
-            pos=&linha[i];
-            memmove(pos, pos + 1, strlen(pos)+1);
+            substituir_palavra(linha,"",i,espacos-1);
+            perguntar(copialinha,linha,
+            "Correcao:Excessos de espacos em branco consecutivos (mais do que um) devem ser descartados.");
             tam--;
-            i--;
         }
     }
-    if(strcmp(linha,copialinha)==0)return 0;
-    else return 1;
 }
 
 //Função para confirmar alterações
@@ -189,6 +218,8 @@ int perguntar(char linha[],char copialinha[],char regra[]){
 int sinalaberto_e_nao_fechados(char linha[], int pos,int primeiro){
     int pos_aberto,s_aberto=0;
     int tam = strlen(linha);
+    char copialinha[TAM_MAX_LINHA];
+    strcpy(copialinha,linha);
     for ( pos=pos; pos < tam; pos++)
     {
         //abertura
@@ -214,6 +245,8 @@ int sinalaberto_e_nao_fechados(char linha[], int pos,int primeiro){
         {
             substituir_palavra(linha,"",pos_aberto,1);
             s_aberto=0;
+            perguntar(copialinha,linha,
+            "Correcao: Sinais abertos e nao fechados antes de um final de frase devem ser descartados. Da mesma forma, sinais fechados sem terem sido abertos devem ser descartados.");
             if(!primeiro)return (pos-1);
         }
 
@@ -234,6 +267,9 @@ int sinalaberto_e_nao_fechados(char linha[], int pos,int primeiro){
             else
             {
                 substituir_palavra(linha,"",pos,1);
+                perguntar(copialinha,linha,
+                "Correcao: Sinais abertos e nao fechados antes de um final de frase devem ser descartados. Da mesma forma, sinais fechados sem terem sido abertos devem ser descartados.");
+
                 pos--;
             }
         }
@@ -247,6 +283,8 @@ int mesmo_sinal(char linha[], int pos,int primeiro){
     int s_aberto=0;
     int tam = strlen(linha);
     char sinalabertura;
+    char copialinha[TAM_MAX_LINHA];
+    strcpy(copialinha,linha);
     for ( pos=pos; pos < tam; pos++)
     {
         //abertura
@@ -284,6 +322,8 @@ int mesmo_sinal(char linha[], int pos,int primeiro){
 				linha[pos]= ']';
 				break;
 			}
+            perguntar(copialinha,linha,
+            "Correcao: Os sinais de abertura e fechamento devem ser os mesmos.");
 			s_aberto=0;
 			if (!primeiro)
 			{
@@ -295,10 +335,26 @@ int mesmo_sinal(char linha[], int pos,int primeiro){
     return 0;
 }
 
+int ehmaiuscula(char c){
+    if(c>='A'&&
+       c<='Z')
+        return 1;
+    else
+        return 0;
+}
+
+int ehdigito(char c){
+    if(c>=48&&
+       c<=57)
+        return 1;
+    else
+        return 0;
+}
+
 //verifica se a palavra consta no dicionário
 int verifica_dicio(FILE *dicio, char palavra[]){
 
-    if(isupper(palavra[0])) return 1; //nomes pessoais e acrônimos
+    if(ehmaiuscula(palavra[0])) return 1; //nomes pessoais e acrônimos
 
     char palavradicio[TAM_MAX_PALAVRA];
     fseek(dicio, 0, SEEK_SET);
@@ -401,7 +457,12 @@ int semelhanca(FILE *dicio, char palavra[]){
     }
 }
 
-int main(){
+int main(int argc, char* argv[]){
+    if (argc!=3)
+    {
+        printf("Erro: quantidade de argumentos invalida!\n");
+        return 1;
+    }
     char copiapalavra[TAM_MAX_PALAVRA],palavra[TAM_MAX_PALAVRA],
     dicio_filename[100],text_fileName[100],
     new_filename[100],linha[TAM_MAX_LINHA],copialinha[TAM_MAX_LINHA];
@@ -412,11 +473,8 @@ int main(){
 
     int offset = 0;
 
-    printf("Digite o nome do arquivo que sera corrigido:\n");
-    scanf("%s",text_fileName);
-
-    printf("Digite o nome do arquivo que sera utilizado como dicionario:\n");
-    scanf("%s",dicio_filename);
+    strcpy(text_fileName,argv[1]);
+    strcpy(dicio_filename,argv[2]);
 
     //Cria o novo arquivo com a data e o horário
     time_t agora;
@@ -434,6 +492,7 @@ int main(){
 
     sprintf(text_fileName,"%s.txt",text_fileName);
     sprintf(dicio_filename,"%s.txt",dicio_filename);
+    
     if((texto = fopen(text_fileName, "r+"))==NULL){
         printf("\nNao foi possivel abrir o seu arquivo de texto: %s\n",text_fileName);
         return 1;
@@ -449,64 +508,53 @@ int main(){
         fgets(linha,TAM_MAX_LINHA,texto);
         strcpy(copialinha,linha);
         //REGRA 6
-        pergunta = caracteres_especiais(copialinha);
-        if(pergunta){
-            perguntar(linha,copialinha,
-            "Correcao: Caracteres especiais ('@','#','$','\x25','&','*') devem ser descartados.");
+        for(offset=0;linha[offset]!='\0';offset++)
+        {
+            if (ehcaracter_especial(linha[offset]))
+            {
+                substituir_palavra(copialinha,"",offset,1);
+                perguntar(linha,copialinha,
+                "Correcao: Caracteres especiais ('@','#','$','\x25','&','*') devem ser descartados.");
+            }
         }
 
         //REGRA 3
-        sinalaberto_e_nao_fechados(copialinha,0,1);
-
-        pergunta = (strcmp(linha,copialinha) != 0);
-
-        if(pergunta){
-            perguntar(linha,copialinha,
-            "Correcao: Sinais abertos e nao fechados antes de um final de frase devem ser descartados. Da mesma forma, sinais fechados sem terem sido abertos devem ser descartados.");
-            pergunta=0;
-        }
+        sinalaberto_e_nao_fechados(linha,0,1);
 
         //REGRA 4
-        mesmo_sinal(copialinha,0,1);
+        mesmo_sinal(linha,0,1);
 
-        pergunta = (strcmp(linha,copialinha) != 0);
-
-        if(pergunta){
-            perguntar(linha,copialinha,
-            "Correcao: Os sinais de abertura e fechamento devem ser os mesmos.");
-            pergunta=0;
-        }
-
-        //REGRA 2
+        //REGRA 2,8,9,10
         offset=0;
-        while (sscanf(linha + offset, "%s", palavra) == 1)
+        while (linha[offset]!='\0')
         {
-            strcpy(copiapalavra,palavra);
-            pergunta += tamanho_letras(copiapalavra);
-            tamanho_palavra = strlen(copiapalavra);
-
-            for ( i = 0; i < tamanho_palavra; i++)copialinha[offset+i] = copiapalavra[i];
-
-            // Atualiza o offset para a próxima copiapalavra
-            offset += tamanho_palavra;
-            // Pula espaços em branco e virgulas
-            while (linha[offset] == ' ' || 
-                   linha[offset] == '\t'||
-                   linha[offset] == ','
+            while (//Se não for letra.
+                   !((linha[offset] >='A'&&
+                   linha[offset] <='Z') ||
+                   (linha[offset] >='a'&&
+                   linha[offset] <='z'))
+                   &&
+                   //Se for o ultimo caracter da linha.
+                   linha[offset]!='\0'
                    )
                 offset++;
-        }
-        if(pergunta>0){
-            perguntar(linha,copialinha,
-            "Correcao: Em qualquer palavra, o tamanho da letra deve ser o mesmo para todas as letras.");
-            pergunta=0;
-        }
+            
+            if(linha[offset]=='\0')break;
 
-        //REGRA 8,9,10
-        offset=0;
-        while (sscanf(linha + offset, "%[A-Za-z]", palavra) == 1)
-        {
-            tamanho_palavra = strlen(palavra);
+            sscanf(linha + offset, "%[A-Za-z]", palavra);
+            printf("\npalavra: %s\n",palavra);
+            strcpy(copiapalavra,palavra);
+            tamanho_palavra = strlen(copiapalavra);
+
+            if(tamanho_letras(copiapalavra)){
+                substituir_palavra(copialinha,copiapalavra,offset,tamanho_palavra);
+                if(perguntar(linha,copialinha,
+                "Correcao: Em qualquer palavra, o tamanho da letra deve ser o mesmo para todas as letras."))
+                    strcpy(palavra,copiapalavra);
+                else
+                    strcpy(copiapalavra,palavra);
+            }
+
             if(!verifica_dicio(dicio,palavra)){//verifica se a palavra não está no dicionário
                 //REGRA 9
                 strcpy(copiapalavra,palavra);//copia a palavra
@@ -544,31 +592,28 @@ int main(){
                     }
                 }
             }
-            else offset+=tamanho_palavra;
-            while (linha[offset] == ' ' || 
-                   linha[offset] == '\t'||
-                   linha[offset] == ','
-                   )
-                offset++;
+            else
+                offset+=tamanho_palavra;
         }
 
 
         //REGRA 7
-        pergunta = espacosrepetidos(copialinha);
-        if(pergunta){
-            perguntar(linha,copialinha,
-            "Correcao:Excessos de espacos em branco consecutivos (mais do que um) devem ser descartados.");
-            pergunta=0;
-        }
-        offset=0;
+        espacosrepetidos(linha);
+        strcpy(copialinha,linha);
 
+        offset=0;
         //REGRA 5
         int numero;
         while (copialinha[offset]!='\0'){
-            if (isdigit(copialinha[offset])!=0)
+            if (ehdigito(copialinha[offset])!=0)
             {
                 sscanf(copialinha + offset,"%d",&numero);
-                pergunta+=numero_extenso(copialinha,offset,numero);
+                pergunta=numero_extenso(copialinha,offset,numero);
+                if(pergunta){
+                    perguntar(linha,copialinha,
+                    "Correcao: Numeros naturais inferiores a 11 devem ser escritos por extenso.");
+                     pergunta = 0;
+                }
                 while (numero>=10)
                 {
                     offset++;
@@ -579,12 +624,6 @@ int main(){
             offset++;
         }
 
-        if(pergunta){
-            perguntar(linha,copialinha,
-            "Correcao: Numeros naturais inferiores a 11 devem ser escritos por extenso.");
-            pergunta = 0;
-        }
-
         offset=0;
         //REGRA 1
         while (sscanf(linha + offset, "%s", palavra) == 1){
@@ -592,14 +631,18 @@ int main(){
             if(inicio_frase){
                 if(copiapalavra[0]>='a' && copiapalavra[0]<='z'){
                     copiapalavra[0]-=32;
-                    pergunta = 1;
+                    pergunta=1;
                     }
                 inicio_frase=0;
             }
             tamanho_palavra = strlen(copiapalavra);
 
             for ( i = 0; i < tamanho_palavra; i++)copialinha[offset+i] = copiapalavra[i];
-
+            if(pergunta){
+                pergunta=0;
+                perguntar(linha,copialinha,
+                    "Correcao:Todas as frases devem iniciar com letra maiuscula.");
+            }
             //verifica se acabou a frase e começou outra
             inicio_frase=fim_de_frase(copiapalavra[tamanho_palavra-1]);
             // Atualiza o offset para a próxima copiapalavra
@@ -612,11 +655,6 @@ int main(){
                 offset++;
         }
 
-        if(pergunta){
-            perguntar(linha,copialinha,
-            "Correcao:Todas as frases devem iniciar com letra maiuscula.");
-            pergunta=0;
-        }
         fputs(linha,novo);
     }
     fclose(dicio);
