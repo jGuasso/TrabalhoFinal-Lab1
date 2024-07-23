@@ -1,0 +1,4 @@
+Os professores devem estar preparados para a preparacao de exercicios para provas da UFSM.
+Deve ser preparado ao menos 1 (no minimo) exercicio. Se forem preparados mais do que cinco, ao menos um deles deve ser objetivo ou seja, de marcar. 
+Se for preparado apenas um, a questao deve ser dissertativa. Use # para demarcar a questao. 
+ 

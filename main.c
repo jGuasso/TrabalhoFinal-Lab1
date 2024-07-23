@@ -22,7 +22,7 @@ int ehmaiuscula(char c);
 int ehdigito(char c);
 int verifica_dicio(FILE *dicio, char palavra[]);
 int nivel_semelhanca(char palavradicio[], char palavra[]);
-int semelhanca(FILE *dicio, char palavra[]);
+int semelhanca(FILE *dicio, char palavra[], char linha[]);
 
 //Função que verifica se o caracter encerra a frase
 int fim_de_frase(char caracter){
@@ -399,7 +399,7 @@ int nivel_semelhanca(char palavradicio[], char palavra[]){
 }
 
 //verifica se existe palavra semelhante no dicionario
-int semelhanca(FILE *dicio, char palavra[]){
+int semelhanca(FILE *dicio, char palavra[], char linha[]){
     int pontos_palavras[3]={INT_MAX,INT_MAX,INT_MAX},pontos,i,j;
     char toppalavras[3][TAM_MAX_PALAVRA]={" "," "," "},palavradicio[TAM_MAX_PALAVRA],copiapalavra[TAM_MAX_PALAVRA];
     fseek(dicio, 0, SEEK_SET);
@@ -429,6 +429,7 @@ int semelhanca(FILE *dicio, char palavra[]){
     while(1)
     {
         char verificador;
+        printf("\nNo trecho:\n%s\n",linha);
         printf("\nDeseja alterar a palavra para alguma opcao existente no dicionario?\n");
         printf("\npalavra original:\" %s \"\n",palavra);
         printf("\nOpcoes:\n1:\" %s \"\n2:\" %s \"\n3:\" %s \"\n",toppalavras[0],toppalavras[1],toppalavras[2]);
@@ -542,7 +543,6 @@ int main(int argc, char* argv[]){
             if(linha[offset]=='\0')break;
 
             sscanf(linha + offset, "%[A-Za-z]", palavra);
-            printf("\npalavra: %s\n",palavra);
             strcpy(copiapalavra,palavra);
             tamanho_palavra = strlen(copiapalavra);
 
@@ -558,8 +558,8 @@ int main(int argc, char* argv[]){
             if(!verifica_dicio(dicio,palavra)){//verifica se a palavra não está no dicionário
                 //REGRA 9
                 strcpy(copiapalavra,palavra);//copia a palavra
-                strcpy(copialinha,linha);//copia a palavra
-                if(semelhanca(dicio,copiapalavra)){//verifica se existe semelhança no dicionário
+                strcpy(copialinha,linha);//copia a linha
+                if(semelhanca(dicio,copiapalavra,linha)){//verifica se existe semelhança no dicionário
                     substituir_palavra(linha,copiapalavra,offset,tamanho_palavra);//substitui a palavra na posição
                     tamanho_palavra=strlen(copiapalavra);
                     offset+=tamanho_palavra;
